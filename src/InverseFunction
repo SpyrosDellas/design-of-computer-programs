@@ -1,0 +1,87 @@
+import math
+
+
+def slow_inverse(f, delta=1 / 128.):
+    """Given a function y = f(x) that is a monotonically increasing function on
+    non-negative numbers, return the function x = f_1(y) that is an approximate
+    inverse, picking the closest value to the inverse, within delta.
+    """
+
+    def f_1(y):
+        x = 0
+        while f(x) < y:
+            x += delta
+        # Now x is too big, x-delta is too small; pick the closest to y
+        return x if (f(x) - y < y - f(x - delta)) else x - delta
+
+    return f_1
+
+
+def inverse(f, delta=1.0/128):
+    """Given a function f(x) that is a monotonically increasing function on
+    non-negative numbers, return the function _f(y) that is an approximate
+    inverse, picking the closest value to the inverse, within delta.
+
+    Runs in O(log(n)) time, where n is the magnitude of the input
+    """
+    def _f(y):
+        try:
+            return newton(y)
+        except ArithmeticError:
+            return binary_search(y)
+
+    def newton(y):
+        x = 1.0
+        dx = 1.0e-3
+        while abs(f(x) - y) >= delta:
+            # approximate the derivative of g(x) = f(x) - y
+            fx = f(x)
+            dg = (f(x + dx) - fx) / dx
+            # update x
+            x -= (fx - y) / dg
+        return x
+
+    def binary_search(y):
+        # exponential search
+        lo, hi = 0, 1.0e-3
+        x = lo + (hi - lo) / 2
+        while f(x) < y:
+            lo = hi
+            hi *= 2
+            x = lo + (hi - lo) / 2
+        # binary search
+        while abs(f(x) - y) >= delta:
+            if f(x) > y:
+                hi = x
+            else:
+                lo = x
+            new_x = lo + (hi - lo) / 2
+            # floating point precision limit reached
+            if new_x == x:
+                return x
+            x = new_x
+        return x
+
+    return _f
+
+
+def square(x):
+    return x * x
+
+
+
+# will take approx 25 secs for x = 1.0e12. Too slow...
+slow_sqrt = slow_inverse(square)
+# print(slow_sqrt(x))
+
+log10 = inverse(lambda x: 10**x)
+atan = inverse(lambda x: math.tan(x))
+
+x = 3.0e10
+print("log(%f) from inverse of f(x) = 10^x is: %f" % (x, log10(x)))
+print("log(%f) from math.log10() is: %f" % (x, math.log10(x)))
+
+x = 2.0
+print("atan(%f) from inverse of f(x) = tan(x) is: %f" % (x, atan(x)))
+print("log(%f) from math.atan() is: %f" % (x, math.atan(x)))
+
